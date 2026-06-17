@@ -19,11 +19,14 @@ This repo turns structured ecommerce knowledge into a lightweight CLI customer-s
 flowchart LR
     A["Store pages"] --> B["store2knowledge Markdown export"]
     B --> C["data/products.md<br/>data/policy.md<br/>data/faq.md"]
-    C --> D["LlamaIndex SimpleDirectoryReader"]
-    D --> E["SentenceSplitter<br/>chunk_size=256<br/>chunk_overlap=20"]
-    E --> F["VectorStoreIndex"]
-    F --> G["Query engine<br/>similarity_top_k=2"]
-    G --> H["Customer-service answer<br/>with source nodes"]
+    C --> D["Structured ecommerce checks"]
+    C --> E["LlamaIndex SimpleDirectoryReader"]
+    D --> F["Deterministic count answers"]
+    E --> G["SentenceSplitter<br/>chunk_size=256<br/>chunk_overlap=20"]
+    G --> H["VectorStoreIndex"]
+    H --> I["Query engine<br/>similarity_top_k=2"]
+    F --> J["Customer-service answer"]
+    I --> J
 ```
 
 ## Run Locally
@@ -56,7 +59,7 @@ The table below summarises a local run against the current MURA knowledge files.
 
 | Customer question | Assistant answer | Retrieved source | What it demonstrates |
 |---|---|---|---|
-| How many products do you have? | There are three products listed. | `data/products.md` | Product-count questions are grounded in the product knowledge file, although this answer shows a current retrieval limitation because the product table contains more than three rows. |
+| How many products do you have? | MURA currently has 12 product records in the local product catalogue. | `data/products.md` | Product-count questions use deterministic Markdown table parsing instead of vector retrieval. |
 | I only have $40 budget, what can I get? | The assistant recommends individual 30g shampoo bar variants at $14 AUD and notes that the Herbal Scalp Massage Comb is over budget at $54 AUD. | `data/products.md` | Budget-aware product recommendation using prices and variants from structured product rows. |
 | Can I return my purchase? | The assistant explains return eligibility, including item condition, original packaging, proof of purchase, and EU cancellation details. | `data/policy.md` | Policy retrieval from returns, cancellations, refunds, and contact sections. |
 | How is the shipping fee? | Shipping rates are calculated at checkout, with free shipping over $50 AUD within Australia and New Zealand. | `data/policy.md` | Shipping-policy lookup with threshold-based free-shipping information. |
@@ -78,14 +81,20 @@ The code also makes a few deliberate RAG choices:
 - It chunks documents with `SentenceSplitter(chunk_size=256, chunk_overlap=20)` to keep product and policy context small enough for targeted retrieval.
 - It uses `similarity_top_k=2` so each answer is based on the two most relevant retrieved chunks.
 - It prints each answer's source nodes and metadata, making it easier to debug whether the model answered from the right product or policy file.
+- It routes exact product-count questions through a deterministic Markdown-table parser before calling the vector query engine.
 
-So the LlamaIndex call provides the RAG engine, while this repo contributes the ecommerce-specific knowledge pipeline: structured store data, customer-service-oriented Markdown, retrieval settings, and source-node inspection.
+So the LlamaIndex call provides the semantic RAG engine, while this repo contributes the ecommerce-specific knowledge pipeline: structured store data, customer-service-oriented Markdown, retrieval settings, source-node inspection, and deterministic handling for exact catalogue questions.
+
+## Tickets
+
+| Ticket | Status | What changed |
+|---|---|---|
+| [001: Deterministic Product Count Answers](docs/tickets/001-deterministic-product-count.md) | Implemented | Product-count questions now parse `data/products.md` directly before falling back to LlamaIndex retrieval. |
 
 ## Current Limitations
 
 - The current CLI rebuilds the index on each run instead of persisting it.
 - Answers depend on what exists in `data/*.md`; if a product ingredient or policy detail is missing, the assistant should say so.
-- Product-count questions may need a more deterministic tool or structured parser because vector retrieval is not ideal for exact counting across a full catalogue.
 - The app currently runs as an interactive terminal prototype rather than a deployed web chat.
 
 ## Credits
