@@ -2,7 +2,7 @@ from functools import lru_cache
 
 from dotenv import load_dotenv
 from llama_index.core import Settings, SimpleDirectoryReader, VectorStoreIndex
-from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.node_parser import TokenTextSplitter
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 
@@ -16,7 +16,7 @@ def get_query_engine():
     Settings.llm = OpenAI(model="gpt-4o-mini")
 
     documents = SimpleDirectoryReader("data").load_data()
-    parser = SentenceSplitter(chunk_size=256, chunk_overlap=20)
+    parser = TokenTextSplitter(chunk_size=256, chunk_overlap=20)
     nodes = parser.get_nodes_from_documents(documents)
     index = VectorStoreIndex(nodes)
     return index.as_query_engine(similarity_top_k=2)
