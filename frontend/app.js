@@ -21,6 +21,13 @@ const input = document.querySelector('#message-input');
 const platform = document.querySelector('#platform');
 const prompts = document.querySelector('#prompts');
 const error = document.querySelector('#error');
+const setup = document.querySelector('#setup');
+const storeForm = document.querySelector('#store-form');
+const storeUrl = document.querySelector('#store-url');
+const setupStatus = document.querySelector('#setup-status');
+const downloadLink = document.querySelector('#download-link');
+const enterChat = document.querySelector('#enter-chat');
+const useDemo = document.querySelector('#use-demo');
 
 function formatJson(value) {
   return JSON.stringify(value, null, 2);
@@ -96,6 +103,54 @@ function setLoading(isLoading) {
   });
 }
 
+function setChatVisible(isVisible) {
+  prompts.hidden = !isVisible;
+  chat.hidden = !isVisible;
+  composer.hidden = !isVisible;
+  error.hidden = !isVisible;
+  setup.hidden = isVisible;
+  if (isVisible) input.focus();
+}
+
+function setSetupLoading(isLoading) {
+  storeUrl.disabled = isLoading;
+  storeForm.querySelector('button').disabled = isLoading || !storeUrl.value.trim();
+  useDemo.disabled = isLoading;
+}
+
+async function generateKnowledge(event) {
+  event.preventDefault();
+  const url = storeUrl.value.trim();
+  if (!url) return;
+
+  setupStatus.textContent = 'Generating Markdown knowledge...';
+  downloadLink.hidden = true;
+  enterChat.hidden = true;
+  setSetupLoading(true);
+
+  try {
+    const response = await fetch(`${API_URL}/knowledge/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_url: url, output_format: 'markdown' }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail?.suggestion || `Request failed with ${response.status}`);
+    }
+
+    setupStatus.textContent = `Knowledge base ready. Found ${data.product_count} product records.`;
+    downloadLink.href = `${API_URL}${data.download_url}`;
+    downloadLink.hidden = false;
+    enterChat.hidden = false;
+  } catch (requestError) {
+    setupStatus.textContent = requestError.message || 'Could not generate store knowledge.';
+  } finally {
+    setSetupLoading(false);
+  }
+}
+
 async function sendMessage(message) {
   const text = message.trim();
   if (!text) return;
@@ -157,9 +212,18 @@ composer.addEventListener('submit', (event) => {
 });
 
 input.addEventListener('input', () => setLoading(false));
+storeUrl.addEventListener('input', () => setSetupLoading(false));
+storeForm.addEventListener('submit', generateKnowledge);
+enterChat.addEventListener('click', () => setChatVisible(true));
+useDemo.addEventListener('click', () => {
+  setupStatus.textContent = 'Using the current demo knowledge files.';
+  setChatVisible(true);
+});
 
 createMessage({
   role: 'agent',
   text: 'Hi, what can I help with today?',
 });
 setLoading(false);
+setSetupLoading(false);
+setChatVisible(false);

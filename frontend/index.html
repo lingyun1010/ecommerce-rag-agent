@@ -22,6 +22,24 @@
         </label>
       </section>
 
+      <section class="setup" id="setup">
+        <div>
+          <p class="eyebrow">Knowledge setup</p>
+          <h2>Create a store knowledge base</h2>
+          <p class="setup-copy">Enter a public ecommerce store URL. The app will generate Markdown knowledge, save it for RAG, and provide a download link.</p>
+        </div>
+        <form class="store-form" id="store-form">
+          <input id="store-url" placeholder="https://example-store.com" aria-label="Store URL" />
+          <button type="submit">Generate Markdown</button>
+        </form>
+        <div class="setup-actions">
+          <button type="button" id="use-demo">Use current demo data</button>
+          <a id="download-link" href="#" hidden>Download Markdown</a>
+          <button type="button" id="enter-chat" hidden>Enter chat</button>
+        </div>
+        <p class="setup-status" id="setup-status"></p>
+      </section>
+
       <section class="prompt-row" aria-label="Demo prompts" id="prompts"></section>
       <section class="chat" aria-live="polite" id="chat"></section>
       <p class="error" id="error"></p>

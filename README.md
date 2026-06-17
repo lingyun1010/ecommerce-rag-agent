@@ -62,6 +62,21 @@ python3 -m http.server 5173
 
 Open `http://127.0.0.1:5173`.
 
+The UI starts with a store URL setup step. After Markdown knowledge is generated, it shows a download link and unlocks the chat experience.
+
+## Store Knowledge Utility
+
+The store-to-knowledge flow is available as an importable Python utility:
+
+```python
+from store_knowledge import generate_store_knowledge
+
+result = generate_store_knowledge("https://example-store.com")
+print(result["markdown"])
+```
+
+The API uses the same utility behind `POST /knowledge/generate`. Generated Markdown is saved as a runtime artifact, exposed through a download link, and written to `data/store_knowledge.md` so the RAG cache can be refreshed for chat.
+
 Send a chat request:
 
 ```bash
@@ -100,6 +115,7 @@ This split is the core system-design decision:
 - LlamaIndex RAG retained for policy, FAQ, and recommendation questions.
 - Human escalation route implemented as a safe handoff response.
 - Minimal dependency-free chat UI implemented under `frontend/`.
+- Store URL to Markdown knowledge generation implemented through `store_knowledge.py`.
 
 ## Troubleshooting
 

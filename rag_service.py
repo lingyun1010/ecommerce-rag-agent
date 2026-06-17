@@ -33,3 +33,7 @@ def answer_with_rag(message: str) -> dict:
         for node in response.source_nodes
     ]
     return {"answer": str(response), "sources": sources}
+
+
+def clear_query_engine_cache() -> None:
+    get_query_engine.cache_clear()
