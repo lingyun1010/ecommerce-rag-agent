@@ -1,6 +1,7 @@
 import re
+import os
 
-from commerce_api import get_listing_count, get_order
+from commerce_api import escalate_to_human, get_listing_count, get_order
 
 
 ESCALATION_TERMS = (
@@ -35,7 +36,7 @@ def extract_order_id(message: str) -> str:
     return match.group(1) if match else ""
 
 
-def answer_message(message: str, platform: str = "etsy") -> dict:
+def answer_message_rule_based(message: str, platform: str = "etsy") -> dict:
     intent = classify_intent(message)
 
     if intent == "PRODUCT_COUNT":
@@ -74,13 +75,14 @@ def answer_message(message: str, platform: str = "etsy") -> dict:
         return {"intent": intent, "answer": answer, "tool_result": result, "sources": []}
 
     if intent == "ESCALATE":
+        result = escalate_to_human(reason="customer_support_review", platform=platform)
         return {
             "intent": intent,
             "answer": (
                 "I am sorry this has been frustrating. I will escalate this to a human support "
                 "teammate so they can review the issue and respond with the right next step."
             ),
-            "tool_result": {"escalated": True, "reason": "customer_support_review"},
+            "tool_result": result,
             "sources": [],
         }
 
@@ -93,3 +95,17 @@ def answer_message(message: str, platform: str = "etsy") -> dict:
         "tool_result": None,
         "sources": rag_result["sources"],
     }
+
+
+def should_use_openai_tool_router() -> bool:
+    router_mode = os.getenv("AGENT_ROUTER", "openai").lower()
+    return router_mode == "openai" and bool(os.getenv("OPENAI_API_KEY"))
+
+
+def answer_message(message: str, platform: str = "etsy") -> dict:
+    if should_use_openai_tool_router():
+        from openai_tool_router import answer_message_with_tools
+
+        return answer_message_with_tools(message=message, platform=platform)
+
+    return answer_message_rule_based(message=message, platform=platform)

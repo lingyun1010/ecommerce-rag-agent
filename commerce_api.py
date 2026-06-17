@@ -64,3 +64,12 @@ def get_order(order_id: str, platform: str = "etsy") -> Optional[dict]:
         "tracking_number": order.tracking_number,
         "estimated_delivery": order.estimated_delivery,
     }
+
+
+def escalate_to_human(reason: str, platform: str = "etsy") -> dict:
+    return {
+        "platform": platform,
+        "escalated": True,
+        "reason": reason or "customer_support_review",
+        "next_step": "A human support teammate should review this conversation.",
+    }

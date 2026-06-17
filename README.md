@@ -11,12 +11,14 @@ The goal is not to answer every question with RAG. The agent routes each custome
 | Shipping, returns, FAQ, product suitability | LlamaIndex RAG over `data/*.md` |
 | Angry customer or refund dispute | Human escalation |
 
+By default, the router uses OpenAI tool calling when `OPENAI_API_KEY` is present. For local deterministic testing, set `AGENT_ROUTER=rules`.
+
 ## Architecture
 
 ```mermaid
 flowchart LR
     U["Customer"] --> A["FastAPI /chat"]
-    A --> R["Intent router"]
+    A --> R["Intent router<br/>OpenAI tool calling or rules fallback"]
     R --> C["Commerce tools<br/>mock Etsy / Shopify API"]
     R --> K["LlamaIndex RAG<br/>products, policy, FAQ"]
     R --> E["Human escalation"]
@@ -31,6 +33,8 @@ Create an `.env` file:
 
 ```bash
 OPENAI_API_KEY=your_api_key_here
+# optional for deterministic local testing:
+# AGENT_ROUTER=rules
 ```
 
 Install dependencies:
@@ -80,7 +84,7 @@ This split is the core system-design decision:
 ## Current Status
 
 - FastAPI `/chat` endpoint implemented.
-- Intent router implemented with rule-based MVP classification.
+- Intent router supports OpenAI tool calling, with rule-based fallback for local testing.
 - Mock commerce tools implemented for listing count and order lookup.
 - LlamaIndex RAG retained for policy, FAQ, and recommendation questions.
 - Human escalation route implemented as a safe handoff response.
