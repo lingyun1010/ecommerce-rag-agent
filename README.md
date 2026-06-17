@@ -51,6 +51,17 @@ Start the backend:
 uvicorn api:app --reload
 ```
 
+## Run The Frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+python3 -m http.server 5173
+```
+
+Open `http://127.0.0.1:5173`.
+
 Send a chat request:
 
 ```bash
@@ -88,6 +99,7 @@ This split is the core system-design decision:
 - Mock commerce tools implemented for listing count and order lookup.
 - LlamaIndex RAG retained for policy, FAQ, and recommendation questions.
 - Human escalation route implemented as a safe handoff response.
+- Minimal dependency-free chat UI implemented under `frontend/`.
 
 ## Troubleshooting
 

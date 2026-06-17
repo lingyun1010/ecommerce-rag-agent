@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ecommerce RAG Agent</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Support console</p>
+          <h1>Ecommerce RAG Agent</h1>
+        </div>
+        <label class="platform">
+          <span>Platform</span>
+          <select id="platform">
+            <option value="etsy">Etsy</option>
+            <option value="shopify">Shopify</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="prompt-row" aria-label="Demo prompts" id="prompts"></section>
+      <section class="chat" aria-live="polite" id="chat"></section>
+      <p class="error" id="error"></p>
+
+      <form class="composer" id="composer">
+        <input id="message-input" placeholder="Ask about products, orders, policies, or refunds" aria-label="Message" />
+        <button type="submit">Send</button>
+      </form>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
