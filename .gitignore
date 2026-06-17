@@ -12,6 +12,10 @@ venv/
 dist/
 build/
 
+# Runtime generated knowledge
+generated_knowledge/
+data/store_knowledge.md
+
 # Editor files
 .DS_Store
 .vscode/
