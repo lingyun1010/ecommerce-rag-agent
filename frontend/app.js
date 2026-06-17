@@ -123,7 +123,7 @@ async function generateKnowledge(event) {
   const url = storeUrl.value.trim();
   if (!url) return;
 
-  setupStatus.textContent = 'Generating Markdown knowledge...';
+  setupStatus.textContent = 'Generating store knowledge files...';
   downloadLink.hidden = true;
   enterChat.hidden = true;
   setSetupLoading(true);
@@ -140,7 +140,8 @@ async function generateKnowledge(event) {
       throw new Error(data.detail?.suggestion || `Request failed with ${response.status}`);
     }
 
-    setupStatus.textContent = `Knowledge base ready. Found ${data.product_count} product records.`;
+    const fileNames = Object.keys(data.files || {}).join(', ') || 'products.md, policy.md, faq.md';
+    setupStatus.textContent = `Knowledge base ready. Generated ${fileNames}. Found ${data.product_count} product records.`;
     downloadLink.href = `${API_URL}${data.download_url}`;
     downloadLink.hidden = false;
     enterChat.hidden = false;

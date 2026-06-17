@@ -4,10 +4,10 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Optional
 
 
 ALLOWED_OUTPUT_FORMATS = {"markdown"}
@@ -339,13 +339,11 @@ def escape_markdown_table(value: str) -> str:
     return normalize_whitespace(value).replace("|", "\\|") or NOT_SPECIFIED
 
 
-def knowledge_to_markdown(knowledge: StoreKnowledge) -> str:
+def products_to_markdown(knowledge: StoreKnowledge) -> str:
     lines = [
-        "# Store Knowledge Base",
+        "# Products",
         "",
         f"Source URL: {knowledge.source_url}",
-        "",
-        "## Products",
         "",
         "| Name | Description | Category | Price | Variants | Usage Notes |",
         "|---|---|---|---|---|---|",
@@ -367,48 +365,70 @@ def knowledge_to_markdown(knowledge: StoreKnowledge) -> str:
             + " |"
         )
 
-    lines.extend(
-        [
-            "",
-            "## Policy",
-            "",
-            "### Shipping",
-            "",
-            knowledge.policy.shipping,
-            "",
-            "### Returns",
-            "",
-            knowledge.policy.returns,
-            "",
-            "### Refunds",
-            "",
-            knowledge.policy.refunds,
-            "",
-            "### Processing Time",
-            "",
-            knowledge.policy.processing_time,
-            "",
-            "### Exchanges",
-            "",
-            knowledge.policy.exchanges,
-            "",
-            "### Cancellations",
-            "",
-            knowledge.policy.cancellations,
-            "",
-            "### Contact",
-            "",
-            knowledge.policy.contact,
-            "",
-            "## FAQ",
-            "",
-        ]
-    )
+    return "\n".join(lines).strip() + "\n"
 
-    for item in knowledge.faq:
-        lines.extend([f"### Q: {item['question']}", "", f"A: {item['answer']}", ""])
+
+def policy_to_markdown(knowledge: StoreKnowledge) -> str:
+    lines = [
+        "# Policy",
+        "",
+        f"Source URL: {knowledge.source_url}",
+        "",
+        "## Shipping",
+        "",
+        knowledge.policy.shipping,
+        "",
+        "## Returns",
+        "",
+        knowledge.policy.returns,
+        "",
+        "## Refunds",
+        "",
+        knowledge.policy.refunds,
+        "",
+        "## Processing Time",
+        "",
+        knowledge.policy.processing_time,
+        "",
+        "## Exchanges",
+        "",
+        knowledge.policy.exchanges,
+        "",
+        "## Cancellations",
+        "",
+        knowledge.policy.cancellations,
+        "",
+        "## Contact",
+        "",
+        knowledge.policy.contact,
+    ]
 
     return "\n".join(lines).strip() + "\n"
+
+
+def faq_to_markdown(knowledge: StoreKnowledge) -> str:
+    lines = [
+        "# FAQ",
+        "",
+        f"Source URL: {knowledge.source_url}",
+        "",
+    ]
+    for item in knowledge.faq:
+        lines.extend([f"## Q: {item['question']}", "", f"A: {item['answer']}", ""])
+
+    return "\n".join(lines).strip() + "\n"
+
+
+def knowledge_to_files(knowledge: StoreKnowledge) -> dict[str, str]:
+    return {
+        "products.md": products_to_markdown(knowledge),
+        "policy.md": policy_to_markdown(knowledge),
+        "faq.md": faq_to_markdown(knowledge),
+    }
+
+
+def knowledge_to_markdown(knowledge: StoreKnowledge) -> str:
+    return "\n\n".join(knowledge_to_files(knowledge).values()).strip() + "\n"
 
 
 def generate_store_knowledge(store_url: str, output_format: str = "markdown") -> dict:
@@ -423,11 +443,7 @@ def generate_store_knowledge(store_url: str, output_format: str = "markdown") ->
     html = fetch_text(validated_url)
     products = extract_products(html, validated_url)
     if not products:
-        raise StoreKnowledgeError(
-            "NO_PRODUCTS_FOUND",
-            "The store may not expose product information publicly, or the products may require JavaScript rendering.",
-            validated_url,
-        )
+        products = [ProductKnowledge()]
 
     policy = extract_policy(html, validated_url)
     knowledge = StoreKnowledge(
@@ -440,8 +456,9 @@ def generate_store_knowledge(store_url: str, output_format: str = "markdown") ->
     return {
         "store_url": validated_url,
         "output_format": output_format,
+        "files": knowledge_to_files(knowledge),
         "markdown": knowledge_to_markdown(knowledge),
-        "product_count": len(products),
+        "product_count": len([product for product in products if product.name != NOT_SPECIFIED]),
     }
 
 
@@ -456,3 +473,23 @@ def save_markdown_artifact(markdown: str, store_url: str, output_dir: Path) -> d
     path = output_dir / f"{artifact_id}.md"
     path.write_text(markdown, encoding="utf-8")
     return {"artifact_id": artifact_id, "path": path}
+
+
+def save_knowledge_files(files: dict[str, str], store_url: str, output_dir: Path) -> dict:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    artifact_id = artifact_id_for_url(store_url)
+    artifact_dir = output_dir / artifact_id
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+
+    paths = {}
+    for filename, content in files.items():
+        path = artifact_dir / filename
+        path.write_text(content, encoding="utf-8")
+        paths[filename] = path
+
+    zip_path = output_dir / f"{artifact_id}.zip"
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for filename, path in paths.items():
+            archive.write(path, arcname=filename)
+
+    return {"artifact_id": artifact_id, "paths": paths, "zip_path": zip_path}
