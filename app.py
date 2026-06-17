@@ -4,8 +4,10 @@ from agent_router import answer_message
 print("Starting...")
 
 while True:
+    print("************************")
     question = input("Question: ")
-
+    
+    print("type 'exit' to quit")
     if question == "exit":
         break
 
