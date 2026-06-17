@@ -1,8 +1,8 @@
 # eCommenceRAG
 
-An ecommerce RAG customer-service prototype for MURA, built with LlamaIndex and OpenAI models.
+An ecommerce RAG customer-service prototype （taking an example with muraritual.com), built with LlamaIndex and OpenAI models.
 
-The app uses Markdown knowledge files generated from store content, then builds a local vector index so a customer can ask natural-language questions about products, budgets, shipping, returns, and product suitability.
+The app uses Markdown/Txt/PDF knowledge files generated from store content, then builds a local vector index so a customer can ask natural-language questions about products, budgets, shipping, returns, and product suitability.
 
 ## What This Project Does
 
