@@ -5,6 +5,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core.node_parser import SentenceSplitter
+from ecommerce_tools import answer_structured_question, load_product_rows
 
 load_dotenv()
 
@@ -15,8 +16,10 @@ Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 Settings.llm = OpenAI(model="gpt-4o-mini")
 
 documents = SimpleDirectoryReader("data").load_data()
+product_rows = load_product_rows()
 
 print(f"Loaded {len(documents)} documents")
+print(f"Loaded {len(product_rows)} product records")
 
 parser = SentenceSplitter(chunk_size=256, chunk_overlap=20)
 
@@ -38,6 +41,13 @@ while True:
     print("type 'exit' to quit")
     if question == "exit":
         break
+
+    structured_answer = answer_structured_question(question, product_rows)
+    if structured_answer:
+        print(structured_answer)
+        print("Source:")
+        print("data/products.md")
+        continue
 
     response = query_engine.query(question)
 
