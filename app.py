@@ -32,8 +32,10 @@ queries = [
 ]
 
 while True:
+    print("************************")
     question = input("Question: ")
-
+    
+    print("type 'exit' to quit")
     if question == "exit":
         break
 
