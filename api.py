@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from agent_router import answer_message
 from rag_service import clear_query_engine_cache
-from store_knowledge import StoreKnowledgeError, generate_store_knowledge, save_markdown_artifact
+from store_knowledge import StoreKnowledgeError, generate_store_knowledge, save_knowledge_files
 
 
 app = FastAPI(title="Ecommerce RAG Agent")
@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 ARTIFACT_DIR = Path("generated_knowledge")
-RAG_STORE_KNOWLEDGE_PATH = Path("data/store_knowledge.md")
+RAG_RUNTIME_DIR = Path("runtime_knowledge/current")
 
 
 class ChatRequest(BaseModel):
@@ -48,6 +48,7 @@ class StoreKnowledgeResponse(BaseModel):
     store_url: str
     output_format: str
     product_count: int
+    files: dict[str, str]
     markdown: str
     download_url: str
     chat_enabled: bool = True
@@ -73,12 +74,16 @@ def generate_knowledge(request: StoreKnowledgeRequest) -> dict:
     except StoreKnowledgeError as exc:
         raise HTTPException(status_code=400, detail=exc.as_dict()) from exc
 
-    artifact = save_markdown_artifact(
-        markdown=result["markdown"],
+    artifact = save_knowledge_files(
+        files=result["files"],
         store_url=result["store_url"],
         output_dir=ARTIFACT_DIR,
     )
-    RAG_STORE_KNOWLEDGE_PATH.write_text(result["markdown"], encoding="utf-8")
+
+    RAG_RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    for filename, content in result["files"].items():
+        (RAG_RUNTIME_DIR / filename).write_text(content, encoding="utf-8")
+
     clear_query_engine_cache()
 
     return {
@@ -90,12 +95,12 @@ def generate_knowledge(request: StoreKnowledgeRequest) -> dict:
 
 @app.get("/knowledge/download/{artifact_id}")
 def download_knowledge(artifact_id: str):
-    path = ARTIFACT_DIR / f"{artifact_id}.md"
+    path = ARTIFACT_DIR / f"{artifact_id}.zip"
     if not path.exists():
         raise HTTPException(status_code=404, detail="Knowledge artifact not found.")
 
     return FileResponse(
         path,
-        media_type="text/markdown",
-        filename=f"{artifact_id}.md",
+        media_type="application/zip",
+        filename=f"{artifact_id}.zip",
     )

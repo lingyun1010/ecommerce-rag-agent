@@ -26,15 +26,15 @@
         <div>
           <p class="eyebrow">Knowledge setup</p>
           <h2>Create a store knowledge base</h2>
-          <p class="setup-copy">Enter a public ecommerce store URL. The app will generate Markdown knowledge, save it for RAG, and provide a download link.</p>
+          <p class="setup-copy">Enter a public ecommerce store URL. The app will generate products, policy, and FAQ Markdown files, save them for RAG, and provide a download link.</p>
         </div>
         <form class="store-form" id="store-form">
           <input id="store-url" placeholder="https://example-store.com" aria-label="Store URL" />
-          <button type="submit">Generate Markdown</button>
+          <button type="submit">Generate knowledge</button>
         </form>
         <div class="setup-actions">
           <button type="button" id="use-demo">Use current demo data</button>
-          <a id="download-link" href="#" hidden>Download Markdown</a>
+          <a id="download-link" href="#" hidden>Download ZIP</a>
           <button type="button" id="enter-chat" hidden>Enter chat</button>
         </div>
         <p class="setup-status" id="setup-status"></p>

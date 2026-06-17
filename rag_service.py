@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from dotenv import load_dotenv
 from llama_index.core import Settings, SimpleDirectoryReader, VectorStoreIndex
@@ -10,12 +11,24 @@ from llama_index.llms.openai import OpenAI
 load_dotenv()
 
 
+RUNTIME_KNOWLEDGE_DIR = Path("runtime_knowledge/current")
+DEFAULT_KNOWLEDGE_DIR = Path("data")
+
+
+def get_knowledge_files() -> list[str]:
+    runtime_files = sorted(RUNTIME_KNOWLEDGE_DIR.glob("*.md"))
+    if runtime_files:
+        return [str(path) for path in runtime_files]
+
+    return [str(path) for path in sorted(DEFAULT_KNOWLEDGE_DIR.glob("*.md"))]
+
+
 @lru_cache(maxsize=1)
 def get_query_engine():
     Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
     Settings.llm = OpenAI(model="gpt-4o-mini")
 
-    documents = SimpleDirectoryReader("data").load_data()
+    documents = SimpleDirectoryReader(input_files=get_knowledge_files()).load_data()
     parser = TokenTextSplitter(chunk_size=256, chunk_overlap=20)
     nodes = parser.get_nodes_from_documents(documents)
     index = VectorStoreIndex(nodes)
