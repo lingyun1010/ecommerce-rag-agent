@@ -141,7 +141,8 @@ async function generateKnowledge(event) {
     }
 
     const fileNames = Object.keys(data.files || {}).join(', ') || 'products.md, policy.md, faq.md';
-    setupStatus.textContent = `Knowledge base ready. Generated ${fileNames}. Found ${data.product_count} product records.`;
+    const warning = data.warning ? ` ${data.warning}` : '';
+    setupStatus.textContent = `Knowledge base ready. Generated ${fileNames}. Found ${data.product_count} product records.${warning}`;
     downloadLink.href = `${API_URL}${data.download_url}`;
     downloadLink.hidden = false;
     enterChat.hidden = false;
