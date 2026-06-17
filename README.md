@@ -85,6 +85,12 @@ This split is the core system-design decision:
 - LlamaIndex RAG retained for policy, FAQ, and recommendation questions.
 - Human escalation route implemented as a safe handoff response.
 
+## Troubleshooting
+
+If RAG requests try to download NLTK resources and fail with an SSL certificate error, make sure you are running the latest code. The RAG pipeline uses `TokenTextSplitter` so local chunking does not depend on downloading NLTK `stopwords` or `punkt_tab`.
+
+You may still see a Pydantic `UnsupportedFieldAttributeWarning` from a transitive dependency during startup. It is a warning from the dependency stack and does not block the API response.
+
 ## Credits
 
 - RAG framework: [LlamaIndex](https://github.com/run-llama/llama_index)
