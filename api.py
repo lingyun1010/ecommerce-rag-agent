@@ -51,6 +51,7 @@ class StoreKnowledgeResponse(BaseModel):
     files: dict[str, str]
     markdown: str
     download_url: str
+    warning: str = ""
     chat_enabled: bool = True
 
 

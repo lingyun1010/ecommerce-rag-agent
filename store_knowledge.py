@@ -11,7 +11,11 @@ from pathlib import Path
 
 
 ALLOWED_OUTPUT_FORMATS = {"markdown"}
-DEFAULT_USER_AGENT = "Mozilla/5.0 (compatible; EcommerceRAGAgent/0.1)"
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/125.0.0.0 Safari/537.36"
+)
 NOT_SPECIFIED = "Not specified"
 
 
@@ -42,6 +46,7 @@ class StoreKnowledge:
     products: list[ProductKnowledge]
     policy: PolicyKnowledge
     faq: list[dict]
+    warning: str = ""
 
 
 class StoreKnowledgeError(Exception):
@@ -114,25 +119,36 @@ def normalize_whitespace(value: str) -> str:
 
 
 def validate_store_url(store_url: str) -> str:
+    store_url = normalize_whitespace(store_url)
     if not store_url:
         raise StoreKnowledgeError(
             "MISSING_STORE_URL",
             "Please provide a valid e-commerce store URL.",
         )
 
+    if "://" not in store_url:
+        store_url = f"https://{store_url}"
+
     parsed = urllib.parse.urlparse(store_url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise StoreKnowledgeError(
             "INVALID_STORE_URL",
-            "Please provide a public http or https store URL.",
+            "Please provide a valid store URL.",
             store_url,
         )
 
-    return store_url
+    return urllib.parse.urlunparse(parsed._replace(fragment=""))
 
 
 def fetch_text(url: str, timeout: int = 15) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": DEFAULT_USER_AGENT})
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": DEFAULT_USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
+    )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             content_type = response.headers.get("Content-Type", "")
@@ -149,6 +165,18 @@ def fetch_text(url: str, timeout: int = 15) -> str:
         return body.decode(charset, errors="replace")
 
     return body.decode(charset, errors="replace")
+
+
+def empty_store_knowledge(source_url: str, warning: str = "") -> StoreKnowledge:
+    products = [ProductKnowledge()]
+    policy = PolicyKnowledge()
+    return StoreKnowledge(
+        source_url=source_url,
+        products=products,
+        policy=policy,
+        faq=generate_faq(products, policy),
+        warning=warning,
+    )
 
 
 def extract_links(html: str, base_url: str) -> list[dict]:
@@ -440,25 +468,35 @@ def generate_store_knowledge(store_url: str, output_format: str = "markdown") ->
         )
 
     validated_url = validate_store_url(store_url)
-    html = fetch_text(validated_url)
-    products = extract_products(html, validated_url)
-    if not products:
-        products = [ProductKnowledge()]
+    try:
+        html = fetch_text(validated_url)
+        products = extract_products(html, validated_url)
+        if not products:
+            products = [ProductKnowledge()]
 
-    policy = extract_policy(html, validated_url)
-    knowledge = StoreKnowledge(
-        source_url=validated_url,
-        products=products,
-        policy=policy,
-        faq=generate_faq(products, policy),
-    )
+        policy = extract_policy(html, validated_url)
+        knowledge = StoreKnowledge(
+            source_url=validated_url,
+            products=products,
+            policy=policy,
+            faq=generate_faq(products, policy),
+        )
+    except StoreKnowledgeError as exc:
+        knowledge = empty_store_knowledge(
+            validated_url,
+            warning=(
+                f"{exc.code}: The store page could not be fetched directly, "
+                "so placeholder knowledge files were generated."
+            ),
+        )
 
     return {
         "store_url": validated_url,
         "output_format": output_format,
         "files": knowledge_to_files(knowledge),
         "markdown": knowledge_to_markdown(knowledge),
-        "product_count": len([product for product in products if product.name != NOT_SPECIFIED]),
+        "product_count": len([product for product in knowledge.products if product.name != NOT_SPECIFIED]),
+        "warning": knowledge.warning,
     }
 
 
